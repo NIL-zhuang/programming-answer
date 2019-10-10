@@ -290,7 +290,7 @@ public class Transformer {
         d = d < 1 ? d : d - (int) d;  // d = 0.xxxxx
         StringBuilder res = new StringBuilder();
         int count = 0;
-        while (d != 0 && count <= sLength) {
+        while (d != 0 && count < sLength) {
             d *= 2;
             if (d < 1) {
                 res.append("0");
