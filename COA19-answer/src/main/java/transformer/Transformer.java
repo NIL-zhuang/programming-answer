@@ -1,5 +1,9 @@
 package transformer;
 
+import util.IEEE754Float;
+
+import java.util.Random;
+
 public class Transformer {
     /**
      * Integer to BinaryString
@@ -10,6 +14,7 @@ public class Transformer {
     public String intToBinary(String numStr) {
         int num = Integer.parseInt(numStr);
         if (num == 0) return "00000000000000000000000000000000";  //0单独判读
+        if (num == (int)(-Math.pow(2, 31))) return "10000000000000000000000000000000";  //abs(最小负数)比abs(最大整数)大1，无法转成正数再计算，单独判读
         boolean isNeg = false;
         if (num < 0) {  //负数转正数
             num = -num;
@@ -334,6 +339,39 @@ public class Transformer {
     private String integerRepresentation(String number, int length) {
         String result = intToBinary(number);
         return result.substring(32 - length);
+    }
+
+    public static void main(String[] args) {
+        Transformer t = new Transformer();
+//        System.out.println(t.floatToBinary("2"));
+//        System.out.println(t.floatToBinary("1"));
+//        System.out.println(t.floatToBinary("0"));
+//        System.out.println(t.floatToBinary("10"));
+//        System.out.println(t.floatToBinary("-10"));
+//        System.out.println(t.binaryToFloat("01000000000000000000000000000000"));
+//        System.out.println(t.binaryToFloat("00111111100000000000000000000000"));
+//        System.out.println(t.binaryToFloat("00000000000000000000000000000000"));
+//        System.out.println(t.binaryToFloat("01000001001000000000000000000000"));
+//        System.out.println(t.binaryToFloat("11000001001000000000000000000000"));
+
+//        int i = 0;
+//        Random r = new Random();
+//        while(i<10){
+//            int a = r.nextInt(10000);
+//            int b = r.nextInt(10000);
+//            int result = a * b;
+//            System.out.println(a + " * " + b + " = " + result);
+//            i++;
+//        }
+
+//        System.out.println("00000000000000000000000000000000".length());
+//        System.out.println(t.intToBinary("2"));
+//        System.out.println(t.intToBinary("-2897711320476"));
+//        System.out.println(t.intToBinary("65536"));
+
+		System.out.println((int)(-Math.pow(2, 31)));
+		System.out.println("10000000000000000000000000000000".length());
+
     }
 
 }

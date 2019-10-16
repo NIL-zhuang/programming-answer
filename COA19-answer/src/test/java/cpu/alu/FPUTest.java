@@ -1,17 +1,18 @@
 package cpu.alu;
 
 import org.junit.Test;
+import transformer.Transformer;
+import util.IEEE754Float;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class FPUTest {
     private FPU fpu = new FPU();
-    private static String P_ZERO = "00000000000000000000000000000000";  //0X0           positive zero
-    private static String N_ZERO = "10000000000000000000000000000000";  //0X80000000    negative zero
-    private static String P_INF = "01111111100000000000000000000000";   //0X7f800000    positive infinity
-    private static String N_INF = "11111111100000000000000000000000";   //0Xff800000    negative infinity
-    private static String P_NAN = "01111111110000000000000000000000";   //0X7fc00000    positive Not_A_Number
-    private static String N_NAN = "11111111110000000000000000000000";   //0Xffc00000    negative Not_A_Number
+    static Transformer transformer = new Transformer();
+    private static String P_ONE = transformer.floatToBinary( "1.0" );    //     positive one
+    private static String N_ONE = transformer.floatToBinary( "-1.0" );   //     negative one
+
 
     @Test
     public void fpuAddTest1() {
@@ -27,26 +28,26 @@ public class FPUTest {
 
     @Test
     public void fpuAddTest3() {
-        String result = fpu.add(P_INF, "01000001001101010000000000000000");
-        assertEquals(P_INF, result);
+        String result = fpu.add(IEEE754Float.P_INF, "01000001001101010000000000000000");
+        assertEquals(IEEE754Float.P_INF, result);
     }
 
     @Test
     public void fpuAddTest4() {
-        String result = fpu.add(N_NAN, "11000000010010111111010111000010");
-        assertEquals(N_NAN, result);
+        String result = fpu.add("01111111110000000000000000000000", "11000000010010111111010111000010");
+        assertTrue(result.matches(IEEE754Float.NaN) || result.equals(IEEE754Float.NaN));
     }
 
     @Test
     public void fpuAddTest5() {
-        String result = fpu.add(P_NAN, N_ZERO);
-        assertEquals(P_NAN, result);
+        String result = fpu.add("01111111110000000000000000000000", IEEE754Float.N_ZERO);
+        assertTrue(result.matches(IEEE754Float.NaN) || result.equals(IEEE754Float.NaN));
     }
 
     @Test
     public void fpuAddTest6() {
         String result = fpu.add("01111111011111111111111111111111", "01111111011111111111111111111111");
-        assertEquals(P_INF, result);
+        assertEquals(IEEE754Float.P_INF, result);
     }
 
     @Test
@@ -115,6 +116,5 @@ public class FPUTest {
         String result = fpu.sub("01000010111101110100000000000000","11000001110101100000000000000000");
         assertEquals("01000011000101100110000000000000", result);
     }
-
 
 }
