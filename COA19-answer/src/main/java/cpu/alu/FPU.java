@@ -1,5 +1,6 @@
 package cpu.alu;
 
+import transformer.Transformer;
 import util.IEEE754Float;
 
 /**
@@ -24,6 +25,22 @@ public class FPU {
             {IEEE754Float.P_INF, IEEE754Float.P_INF, IEEE754Float.NaN},
             {IEEE754Float.N_INF, IEEE754Float.N_INF, IEEE754Float.NaN}
     };
+
+    private final String[][] mulCorner = new String[][]{
+            {IEEE754Float.P_ZERO, IEEE754Float.N_ZERO, IEEE754Float.N_ZERO},
+            {IEEE754Float.N_ZERO, IEEE754Float.P_ZERO, IEEE754Float.N_ZERO},
+            {IEEE754Float.P_ZERO, IEEE754Float.P_ZERO, IEEE754Float.P_ZERO},
+            {IEEE754Float.N_ZERO, IEEE754Float.N_ZERO, IEEE754Float.P_ZERO},
+            {IEEE754Float.P_ZERO, IEEE754Float.P_INF, IEEE754Float.NaN},
+            {IEEE754Float.P_ZERO, IEEE754Float.N_INF, IEEE754Float.NaN},
+            {IEEE754Float.N_ZERO, IEEE754Float.P_INF, IEEE754Float.NaN},
+            {IEEE754Float.N_ZERO, IEEE754Float.N_INF, IEEE754Float.NaN},
+            {IEEE754Float.P_INF, IEEE754Float.P_ZERO, IEEE754Float.NaN},
+            {IEEE754Float.P_INF, IEEE754Float.N_ZERO, IEEE754Float.NaN},
+            {IEEE754Float.N_INF, IEEE754Float.P_ZERO, IEEE754Float.NaN},
+            {IEEE754Float.N_INF, IEEE754Float.N_ZERO, IEEE754Float.NaN}
+    };
+
 
     /**
      * compute the float add of (a + b)
@@ -56,6 +73,18 @@ public class FPU {
      * compute the float mul of a * b
      */
     String mul(String a, String b) {
+        if (a.matches(IEEE754Float.NaN) || b.matches(IEEE754Float.NaN)) {
+            return IEEE754Float.NaN;
+        }
+        String cornerCondition = cornerCheck(mulCorner, a, b);
+        if (null != cornerCondition) return cornerCondition;
+        return new FPUHelper().floatMultiplication(a, b).substring(1);
+    }
+
+    /**
+     * compute the float mul of a / b
+     */
+    String div(String a, String b) {
         // TODO
         return null;
     }
@@ -71,7 +100,6 @@ public class FPU {
     }
 
     private class FPUHelper {
-
 
         /**
          * add two float number
@@ -150,6 +178,100 @@ public class FPU {
             answer.append(ans_exponent);
             answer.append(sig.substring(1, 1 + sLength));  //round策略为向0舍入，故直接舍去保护位
             return answer.toString();
+        }
+
+        /**
+         * multiply two float number
+         *
+         * @param operand1 first in binary format
+         * @param operand2 second in binary format
+         * @return exponent overflow + sign + sLength + eLength
+         */
+        public String floatMultiplication(String operand1, String operand2) {
+            int eLength = 8;
+            int sLength = 23;
+            int bias = (int) ((maxValue(eLength) + 1) / 2 - 1);  //bias
+            int Xexponent = Integer.valueOf(operand1.substring(1, 1 + eLength), 2);  //注意这里要加上第二个参数2，不然默认十进制转化
+            int Yexponent = Integer.valueOf(operand2.substring(1, 1 + eLength), 2);
+            if (Xexponent == 0) Xexponent++;  //如果指数是全0，那么指数的真实值为1，因为阶码已经考虑了隐藏位
+            if (Yexponent == 0) Yexponent++;
+            int exponent = Xexponent + Yexponent - bias;
+            String Xsig = getSignificand(operand1, eLength, sLength);  //get the two significands including the implicit bit
+            String Ysig = getSignificand(operand2, eLength, sLength);
+            int sign = (operand1.charAt(0) - '0') ^ (operand2.charAt(0) - '0');
+            String temp = unsignedMultiplication(Xsig, Ysig, Xsig.length() * 2);  //这里不能用integerMultiplication，因为不是补码表示的乘法，这个是无符号数的乘法
+            StringBuilder answer = new StringBuilder();
+            exponent++;  //前两位都是隐藏位，因此要移动一位小数点
+            while (temp.charAt(0) == '0' && exponent > 0) {
+                temp = leftShift(temp, "1");
+                exponent--;
+            }
+            while (!allZero(temp.substring(0, 1 + sLength)) && exponent < 0) {  //右移规格化
+                temp = logRightShift(temp, "1");
+                exponent++;
+            }
+            if (exponent >= bias * 2 + 1) {  //infinite
+                answer.append("1");
+                answer.append(sign);
+                for (int i = 0; i < eLength; i++) answer.append(1);
+                answer.append(getAllZeros(sLength));
+                return answer.toString();
+            }
+            if (exponent == 0) {  //非规格化数
+                temp = logRightShift(temp, "1");
+            }
+            if (exponent < 0) {  //乘法和除法有可能指数小于0，指数下溢，处理成0
+                answer.append("0" + sign);
+                answer.append(getAllZeros(sLength + eLength));
+                return answer.toString();
+            }
+            temp = temp.substring(1, 1 + sLength);  //第一位隐藏位
+            answer.append("0" + sign);
+            String ans_exponent = Integer.toBinaryString(exponent);
+            int len = ans_exponent.length();
+            for (int i = 0; i < eLength - len; i++) ans_exponent = "0" + ans_exponent;  //补齐到eLength长度
+            answer.append(ans_exponent);
+            answer.append(temp);
+            return answer.toString();
+        }
+
+        /**
+         * unsigned integer multiplication
+         *
+         * @param operand1 first
+         * @param operand2 second
+         * @param length   operand1.length()*2
+         * @return length*2
+         */
+        public String unsignedMultiplication(String operand1, String operand2, int length) {
+            String X = impleDigits(operand1, length / 2);  //length为寄存器长度，因此操作数长度只能为length的一半
+            operand2 = impleDigits(operand2, length / 2);
+            StringBuffer productBuffer = new StringBuffer();
+            for (int i = 0; i < length / 2; i++) productBuffer = productBuffer.append("0");
+            String product = productBuffer.toString() + operand2;
+            for (int i = 0; i < length / 2; i++) {
+                int Y = product.charAt(length - 1) - '0';
+                char carry = '0';
+                if (Y == 1) {
+                    String temp = carry_adder(product.substring(0, length / 2), X, '0', length / 2);  //这里不能用adder，因为length长度不一定为4的倍数
+                    carry = temp.charAt(0);  //carry_adder的溢出即为有进位
+                    product = temp.substring(1) + product.substring(length / 2);
+                }
+                product = carry + product.substring(0, product.length() - 1);  //carry为隐藏进位
+            }
+            return product;
+        }
+
+        /**
+         * get a string of all '0'
+         *
+         * @param length
+         * @return all '0' of length
+         */
+        public String getAllZeros(int length) {
+            StringBuffer res = new StringBuffer();
+            for (int i = 0; i < length; i++) res.append('0');
+            return res.toString();
         }
 
         /**
@@ -343,6 +465,5 @@ public class FPU {
             return result.toString();
         }
     }
-
 
 }

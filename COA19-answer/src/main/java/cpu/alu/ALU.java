@@ -1,6 +1,8 @@
 package cpu.alu;
 
 import transformer.Transformer;
+import util.BinaryIntegers;
+import util.IEEE754Float;
 
 import java.util.Arrays;
 
@@ -26,8 +28,81 @@ public class ALU {
 	 * @return 32-bits
 	 */
 	String mul (String src, String dest){
+        int length = 32;  // length为数据长度
+        String X = impleDigits(src, length);
+        dest = impleDigits(dest, length);
+        String negX = oneAdder(negation(X)).substring(1);  //取反加一,去掉第一位溢出位
+        String product = getAllZeros(length)+dest;
+        int Y1 = 0;
+        int Y2 = product.charAt(2*length-1)-'0';
+        for(int i=0;i<length;i++){
+            switch(Y1-Y2){
+                case 1:
+                    product = adder(product.substring(0,length), X, '0', length) + product.substring(length);
+                    break;
+                case -1:
+                    product = adder(product.substring(0,length), negX, '0', length) + product.substring(length);
+                    break;
+            }
+            product = product.substring(0,1) + product.substring(0, product.length()-1);  //算数右移
+            Y1 = Y2;  //更新两个Y
+            Y2 = product.charAt(2*length-1)-'0';
+        }
+        String higher = product.substring(0, length);
+        String lower = product.substring(length);  // 直接截断高32位，取低32位作为结果返回
+        OF = "0";
+        for(char c: higher.toCharArray()){
+            if(c == '1'){
+                OF = "1";  // 如果高32位有1判定为溢出
+                break;
+            }
+        }
+        return lower;
+    }
+
+    /**
+     * 返回两个二进制整数的除法结果 operand1 ÷ operand2
+     * @param operand1 32-bits
+     * @param operand2 32-bits
+     * @return 65-bits overflow + quotient + remainder
+     */
+    String div(String operand1, String operand2) {
         // TODO
         return null;
+    }
+
+    /**
+     * add one to the operand
+     * @param operand the operand
+     * @return result after adding, the first position means overflow, and the remains means the result
+     */
+    private String oneAdder (String operand){
+        int len = operand.length();
+        StringBuffer temp = new StringBuffer(operand);
+        temp = temp.reverse();
+        int [] num = new int[len];
+        for(int i=0;i<len;i++) num[i] = temp.charAt(i)-'0';  //先转化为反转后对应的int数组
+        int bit = 0x0;
+        int carry = 0x1;
+        char []res = new char[len];
+        for(int i=0;i<len;i++){
+            bit = num[i] ^ carry;
+            carry = num[i] & carry;
+            res[i] = (char)('0' + bit);
+        }
+        String result = new StringBuffer(new String(res)).reverse().toString();
+        return ""+(result.charAt(0)==operand.charAt(0) ? '0' : '1')+result;
+    }
+
+    /**
+     * get a string of all '0'
+     * @param length
+     * @return all '0' of length
+     */
+    private String getAllZeros(int length){
+        StringBuffer res = new StringBuffer();
+        for(int i=0;i<length;i++) res.append('0');
+        return res.toString();
     }
 
     //add two integer
@@ -121,7 +196,7 @@ public class ALU {
 
     /**
      * fix bug(2019-10-13):
-     * 根据标准i386手册(p384)，shift操作的移位操作数仅使用后5位，其他位数直接舍去
+     * 根据标准i386手册(p384)，所有shift操作的移位操作数仅使用后5位，其他位数直接舍去
      * 对应测试用例已修复(testShift2 testShift6)
      * @param src
      * @param dest
@@ -139,7 +214,7 @@ public class ALU {
     }
 
     String sal(String src, String dest) {
-		int shift = Math.abs(Integer.parseInt(transformer.binaryToInt("0" + src.substring(src.length()-5))));
+        int shift = Math.abs(Integer.parseInt(transformer.binaryToInt("0" + src.substring(src.length()-5))));
 		char[] fill = new char[32];
 		Arrays.fill(fill, '0');
 		return dest.substring(shift).concat(new String(fill)).substring(0, 32);
@@ -169,6 +244,94 @@ public class ALU {
         String res = carry_adder(operand1, operand2, c, length);
         OF = "" + addOverFlow(operand1, operand2, res);
         return res;  //注意有进位不等于溢出，溢出要另外判断
+    }
+
+    String serialCarryAdder(String adder1,String adder2){
+        StringBuilder result=new StringBuilder();
+        char carry='0';
+        String output="00";
+        for (int i = adder1.length()-1; i >=0 ; i--) {
+            carry=output.charAt(0);
+            output=fullAdder(adder1.charAt(i),adder2.charAt(i), carry);
+            result.append(output.charAt(1));
+        }
+        // 溢出、进位判断
+        CF=String.valueOf(output.charAt(1));
+        OF=String.valueOf((carry-'0')^(output.charAt(1)));//Cn和Cn-1取异或
+
+        return result.reverse().toString();
+    }
+
+    String carryLookAheadAdder_8(String adder1,String adder2, char carryIn){
+        char[] xChars=adder1.toCharArray();
+        char[] yChars=adder2.toCharArray();
+        int[] x=new int[8];
+        int[] y=new int[8];
+
+        for (int i = 7; i >=0 ; i--) {
+            x[i]=xChars[7-i]-'0';
+            y[i]=yChars[7-i]-'0';
+        }
+
+        //1个时间单位
+        int[] p=new int[8];
+        int[] g=new int[8];
+        for (int i = 0; i <8 ; i++) {
+            p[i]=x[i]|y[i];
+            g[i]=x[i]&y[i];
+        }
+
+        //两个时间单位
+        int[] c=new int[8];//每一位的carryOut
+        for (int i = 0; i <8 ; i++) {
+            c[i]=g[i];
+            int temp=1;
+            for (int j = i ;j >=1 ; j--) {
+                temp=temp&p[j];
+                c[i]=c[i]|(temp&g[j-1]);
+            }
+            c[i]=c[i]|(temp&p[0]&carryIn);
+        }
+
+        //前三个时间单位里同时进行的异或运算
+        int[] xorForXY=new int[8];
+        for (int i = 0; i <8 ; i++) {
+            xorForXY[i]=x[i]^y[i];
+        }
+
+        //第4到第6时间单位
+        StringBuilder result=new StringBuilder();
+        result.append(xorForXY[0]^(carryIn-'0'));
+        for (int i = 1; i <8 ; i++) {
+            result.append(xorForXY[i]^c[i-1]);
+        }
+        result.reverse();
+        result.append(c[7]);//最后的carryOut
+        return result.toString();
+    }
+
+    String connectedCLAAdder(String adder1,String adder2){
+        String result="";
+
+        String CLAresult=carryLookAheadAdder_8(adder1.substring(24,32),adder2.substring(24,32),'0');
+        result=CLAresult.substring(0,8)+result;
+
+        CLAresult=carryLookAheadAdder_8(adder1.substring(16,24),adder2.substring(16,24),CLAresult.charAt(8));
+        result=CLAresult.substring(0,8)+result;
+
+        CLAresult=carryLookAheadAdder_8(adder1.substring(8,16),adder2.substring(8,16),CLAresult.charAt(8));
+        result=CLAresult.substring(0,8)+result;
+
+        CLAresult=carryLookAheadAdder_8(adder1.substring(0,8),adder2.substring(0,8),CLAresult.charAt(8));
+        result=CLAresult.substring(0,8)+result;
+
+        CF=String.valueOf(CLAresult.charAt(8));
+        int x=adder1.charAt(0)-'0';
+        int y=adder2.charAt(0)-'0';
+        int s=result.charAt(0)-'0';
+        OF=(String.valueOf((x&y&~s)|(~x&~y&s)));//不好找Cn-1，所以计算繁琐一点
+        return result;
+
     }
 
     /**
@@ -275,4 +438,48 @@ public class ALU {
         }
         return result.toString();
     }
+
+
+    /**
+     * check if the given number is 0
+     * @param operand given number to be checked
+     * @return 1 presents num == 0 and 0 presents num != 0
+     */
+    private boolean isZero(String operand){
+        for(char c : operand.toCharArray()){
+            if(c != '0') return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * check if the given number is -1
+     * @param operand given number to be checked
+     * @return 1 presents num == -1 and 0 presents num != -1
+     */
+    private boolean isNegativeOne(String operand){
+        for(char c : operand.toCharArray()){
+            if(c != '1') return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * left shift a num using its string format
+     * e.g. "00001001" left shift 2 bits -> "00100100"
+     * @param operand to be moved
+     * @param n moving nums of bits
+     * @return after moving
+     */
+    public String leftShift (String operand, int n){
+        StringBuffer result = new StringBuffer(operand.substring(n));  //保证位数不变
+        for(int i=0;i<n;i++){
+            result = result.append("0");
+        }
+        return result.toString();
+    }
+
+
 }
