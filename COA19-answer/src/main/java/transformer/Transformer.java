@@ -337,4 +337,37 @@ public class Transformer {
         return result.substring(32 - length);
     }
 
+    public static void main(String[] args) {
+        Transformer t = new Transformer();
+//        System.out.println(t.floatToBinary("2"));
+//        System.out.println(t.floatToBinary("1"));
+//        System.out.println(t.floatToBinary("0"));
+//        System.out.println(t.floatToBinary("10"));
+//        System.out.println(t.floatToBinary("-10"));
+//        System.out.println(t.binaryToFloat("01000000000000000000000000000000"));
+//        System.out.println(t.binaryToFloat("00111111100000000000000000000000"));
+//        System.out.println(t.binaryToFloat("00000000000000000000000000000000"));
+//        System.out.println(t.binaryToFloat("01000001001000000000000000000000"));
+//        System.out.println(t.binaryToFloat("11000001001000000000000000000000"));
+
+//        int i = 0;
+//        Random r = new Random();
+//        while(i<10){
+//            int a = r.nextInt(10000);
+//            int b = r.nextInt(10000);
+//            int result = a * b;
+//            System.out.println(a + " * " + b + " = " + result);
+//            i++;
+//        }
+
+//        System.out.println("00000000000000000000000000000000".length());
+//        System.out.println(t.intToBinary("2"));
+//        System.out.println(t.intToBinary("-2897711320476"));
+//        System.out.println(t.intToBinary("65536"));
+
+		System.out.println((int)(-Math.pow(2, 31)));
+		System.out.println("10000000000000000000000000000000".length());
+
+    }
+
 }

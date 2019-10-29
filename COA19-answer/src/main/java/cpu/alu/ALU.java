@@ -67,8 +67,63 @@ public class ALU {
      * @return 65-bits overflow + quotient + remainder
      */
     String div(String operand1, String operand2) {
-        // TODO
-        return null;
+        int length = 64;
+        String quotient = "";
+        String remainder = "";
+        boolean op1Zero = isZero( operand1 );
+        boolean op2Zero = isZero( operand2 );
+
+        if(op1Zero && op2Zero){     // If X=0 and X=0: NaN
+            return BinaryIntegers.NaN;
+        }
+
+        if(op1Zero && !op2Zero){    // If X=0 and Y≠0: 0
+            return "0" + BinaryIntegers.ZERO + BinaryIntegers.ZERO;
+        }
+
+        if(!op1Zero && op2Zero){    // If X≠0 and Y=0: exception
+            throw new ArithmeticException( );
+        }
+
+        if( isZero( operand1.substring( 1 )) && operand1.charAt( 0 )=='1' && isNegativeOne( operand2 ) ){   //   -2^23 / -1  溢出
+            return "1" + operand1 + BinaryIntegers.ZERO;
+        }
+
+        String product = impleDigits(operand1, length);  //符号扩展
+        if(product.charAt(0)==operand2.charAt(0)) product = adder(product.substring(0,length/2),negation(  operand2), '1',length/2)+product.substring(length/2);
+        else product = adder(product.substring(0,length/2), operand2,'0', length/2)+product.substring(length/2);
+        for(int i=0;i<length/2;i++){
+            if(product.charAt(0)==operand2.charAt(0)){
+                quotient += "1";
+                product = leftShift(product,1);
+                product = adder(product.substring(0,length/2),negation(  operand2), '1',length/2)+product.substring(length/2);
+            }else{
+                quotient += "0";
+                product = leftShift(product,1);
+                product = adder(product.substring(0,length/2),operand2,'0',length/2)+product.substring(length/2);
+            }
+        }
+
+        quotient = quotient.substring(1);
+        if(product.charAt(0)==operand2.charAt(0)) quotient = quotient + "1";
+        else quotient = quotient + "0";
+        if(quotient.charAt(0)=='1') quotient = oneAdder(quotient).substring(1);
+        remainder = product.substring(0,length/2);
+        if(remainder.charAt(0)!=operand1.charAt(0)){
+            if(operand1.charAt(0)==operand2.charAt(0)){
+                remainder = adder(remainder,operand2,'0',length/2);
+            }else{
+                remainder = adder(remainder,negation(  operand2),'1', length/2);
+            }
+        }
+
+        if(isZero(  adder( operand2 , impleDigits(remainder,length/2),'0', length/2))){
+            quotient =  add( impleDigits( quotient, length/2), BinaryIntegers.NegativeOne );
+            remainder = BinaryIntegers.ZERO;
+            return "0" + quotient+remainder;
+        }
+
+        return "0" + impleDigits(quotient,length/2) + impleDigits(remainder,length/2);  //溢出情况前面判断了，补齐位数
     }
 
     /**

@@ -94,7 +94,7 @@ public class ALUDivTest {
 
 
     /**
-     * -2^23 / -1 = -2^23(0) 溢出
+     * -2^31 / -1 = -2^31(0) 溢出
      */
     @Test
     public void test9() {

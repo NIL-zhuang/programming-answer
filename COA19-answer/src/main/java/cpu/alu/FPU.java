@@ -41,6 +41,16 @@ public class FPU {
             {IEEE754Float.N_INF, IEEE754Float.N_ZERO, IEEE754Float.NaN}
     };
 
+    private final String[][] divCorner = new String[][]{
+            {IEEE754Float.P_ZERO, IEEE754Float.P_ZERO, IEEE754Float.NaN},
+            {IEEE754Float.N_ZERO, IEEE754Float.N_ZERO, IEEE754Float.NaN},
+            {IEEE754Float.P_ZERO, IEEE754Float.N_ZERO, IEEE754Float.NaN},
+            {IEEE754Float.N_ZERO, IEEE754Float.P_ZERO, IEEE754Float.NaN},
+            {IEEE754Float.P_INF, IEEE754Float.P_INF, IEEE754Float.NaN},
+            {IEEE754Float.N_INF, IEEE754Float.N_INF, IEEE754Float.NaN},
+            {IEEE754Float.P_INF, IEEE754Float.N_INF, IEEE754Float.NaN},
+            {IEEE754Float.N_INF, IEEE754Float.P_INF, IEEE754Float.NaN},
+    };
 
     /**
      * compute the float add of (a + b)
@@ -85,8 +95,32 @@ public class FPU {
      * compute the float mul of a / b
      */
     String div(String a, String b) {
-        // TODO
-        return null;
+        if (a.matches(IEEE754Float.NaN) || b.matches(IEEE754Float.NaN)) {
+            return IEEE754Float.NaN;
+        }
+        if (IEEE754Float.P_ZERO.equals(b) || IEEE754Float.N_ZERO.equals(b)) {
+            if ( (!IEEE754Float.P_ZERO.equals(a)) && (!IEEE754Float.N_ZERO.equals(b)) ) {
+                throw new ArithmeticException();
+            }
+        }
+        String cornerCondition = cornerCheck(divCorner, a, b);
+        if (null != cornerCondition) return cornerCondition;
+        if (IEEE754Float.P_ZERO.equals(a) || IEEE754Float.N_ZERO.equals(a)) {
+            if (a.charAt(0) == b.charAt(0)) {
+                return IEEE754Float.P_ZERO;
+            } else {
+                return IEEE754Float.N_ZERO;
+            }
+        }
+        if (IEEE754Float.P_ZERO.equals(b) || IEEE754Float.N_ZERO.equals(b)) {
+            if (a.charAt(0) == b.charAt(0)) {
+                return IEEE754Float.P_INF;
+            } else {
+                return IEEE754Float.N_INF;
+            }
+        }
+
+        return new FPUHelper().floatDivision(a, b).substring(1);
     }
 
     String cornerCheck(String[][] cornerMatrix, String oprA, String oprB) {
@@ -260,6 +294,94 @@ public class FPU {
                 product = carry + product.substring(0, product.length() - 1);  //carry为隐藏进位
             }
             return product;
+        }
+
+        /**
+         * divide two float number: oprand1 / oprand2
+         *
+         * @param operand1 first in binary format
+         * @param operand2 second in binary format
+         * @return exponent overflow + sign + sLength + eLength
+         */
+        public String floatDivision(String operand1, String operand2) {
+            int eLength = 8;
+            int sLength = 23;
+            int gLength = 4;
+            int sign = (operand1.charAt(0)-'0') ^ (operand2.charAt(0)-'0');
+            int bias = (int)((maxValue(eLength)+1)/2-1);  //bias
+            int Xexponent = Integer.valueOf(operand1.substring(1,1+eLength),2);  //注意这里要加上第二个参数2，不然默认十进制转化
+            int Yexponent = Integer.valueOf(operand2.substring(1,1+eLength),2);
+            if(Xexponent==0) Xexponent++;  //如果指数是全0，那么指数的真实值为1，因为阶码已经考虑了隐藏位
+            if(Yexponent==0) Yexponent++;
+            String Xsig = getSignificand(operand1, eLength, sLength);  //get the two significands including the implicit bit
+            String Ysig = getSignificand(operand2, eLength, sLength);
+            for (int i = 0; i < gLength; i++) {  //add the guard bits
+                Xsig += "0";
+                Ysig += "0";
+            }
+            //非规格化转为隐藏位为1的数
+            while(Xsig.charAt(0)=='0') {
+                Xsig = leftShift(Xsig,"1");
+                Xexponent--;
+            }
+            while(Ysig.charAt(0)=='0') {
+                Ysig = leftShift(Ysig,"1");
+                Yexponent--;
+            }
+            int exponent = Xexponent - Yexponent + bias;
+            String temp = unsignedDivision(Xsig, Ysig);  //这里不能用integerMultiplication，因为不是补码表示的除法，这个是无符号数的除法
+            StringBuilder answer = new StringBuilder();
+            //特殊除法，第一位就是隐藏位
+            while(temp.charAt(0) == '0' && exponent > 0){
+                temp = leftShift(temp,"1");
+                exponent--;
+            }
+            while(!allZero(temp.substring(0,1+sLength)) && exponent < 0){  //右移规格化
+                temp = logRightShift(temp,"1");
+                exponent++;
+            }
+            if(exponent >= bias*2+1){  //infinite
+                answer.append("1"); answer.append(sign);
+                for(int i=0;i<eLength;i++) answer.append(1);
+                answer.append(getAllZeros(sLength));
+                return answer.toString();
+            }
+            if(exponent == 0){  //非规格化数
+                temp = logRightShift(temp, "1");
+            }
+            if(exponent < 0){  //乘法和除法有可能指数小于0，指数下溢，处理成0
+                answer.append("0"+sign);
+                answer.append(getAllZeros(sLength+eLength));
+                return answer.toString();
+            }
+            temp = temp.substring(1,1+sLength);  //第一位隐藏位
+            answer.append("0"+sign);
+            String ans_exponent = Integer.toBinaryString(exponent);
+            int len = ans_exponent.length();
+            for(int i=0;i<eLength-len;i++) ans_exponent = "0"+ans_exponent;  //补齐到eLength长度
+            answer.append(ans_exponent);
+            answer.append(temp);
+            return answer.toString();
+        }
+
+        /**
+         * unsigned integer division
+         *
+         * @param operand1 first
+         * @param operand2 second
+         * @return length*2
+         */
+        public String unsignedDivision(String operand1, String operand2) {
+            String quotient = "";
+            String product = operand1;  //0扩展
+            for(int i=0;i<operand1.length();i++) product += "0";  //直接在后面加0
+            for(int i=0;i<operand1.length();i++){
+                String temp = carry_adder(product.substring(0,operand1.length()), operand2, '1', operand2.length()).substring(1);
+                if(temp.charAt(0)=='0') product = temp.substring(1) + product.substring(operand1.length())+"1";
+                else product = leftShift(product,"1");
+            }
+            quotient = product.substring(operand1.length());
+            return quotient;
         }
 
         /**
@@ -464,6 +586,18 @@ public class FPU {
             }
             return result.toString();
         }
+    }
+
+
+    public static void main(String[] args) {
+        FPU fpu = new FPU();
+        Transformer t = new Transformer();
+        System.out.println(t.floatToBinary("0.4375"));
+        System.out.println(t.floatToBinary("0.5"));
+        System.out.println(t.floatToBinary("0.875"));
+        String resultBin = fpu.div("00111110111000000000000000000000", "00111111000000000000000000000000");
+        System.out.println(resultBin);
+        System.out.println(resultBin.equals("00111111011000000000000000000000"));
     }
 
 }
