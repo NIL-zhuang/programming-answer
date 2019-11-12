@@ -38,7 +38,67 @@ public class Cache {	//
 	 * @return 数据块在Cache中的对应行号
 	 */
 	public int fetch(String sAddr, int len) {
-		// TODO
+		int blockNO = getBlockNO(sAddr);    // 地址前22位int形式
+		int rowNO = mappingStrategy.map(blockNO);  // 返回内存地址blockNO所对应的cache中的行，返回-1则表示没有命中
+
+		if(rowNO == -1){    // 未命中
+			rowNO = mappingStrategy.writeCache(blockNO);
+		}
+
+		return rowNO;
+	}
+
+	/**
+	 *
+	 * @param row 内存地址对应的cache行
+	 * @param tag 内存地址对应的tag
+	 * @return
+	 */
+	public boolean isMatch(int row, char[] tag){
+		if(this.cache.get( row ) == null){
+			return false;
+		}
+		if (!this.cache.get(row).validBit) {
+			return false;
+		}
+		if (!Arrays.equals(this.cache.get(row).tag, tag)) {
+			return false;
+		}
+		return true;
+	}
+
+	// 用于LRU算法，重置时间戳
+	public void setTimeStamp(int row){
+		CacheLine cacheLine = cache.get( row );
+		cacheLine.timeStamp = System.currentTimeMillis();
+	}
+
+	// 获取时间戳
+	public long getTimeStamp(int row){
+		CacheLine cacheLine = cache.get( row );
+		if (cacheLine.validBit) {
+			return cacheLine.timeStamp;
+		}
+		return -1;
+	}
+
+	// 未命中，更新cache
+	public void update(int row, char[] addrTag, char[] input) {
+		CacheLine cacheLine = cache.get( row );
+		cacheLine.update( addrTag, input );
+	}
+
+	// LFU算法增加访问次数
+	public void addVisited(int row){
+		CacheLine cacheLine = cache.get( row );
+		cacheLine.visited = cacheLine.visited+1;
+	}
+
+	public int getVisited(int row){
+		CacheLine cacheLine = cache.get( row );
+		if (cacheLine.validBit) {
+			return cacheLine.visited;
+		}
 		return -1;
 	}
 
@@ -193,6 +253,19 @@ public class Cache {	//
 		}
 		char[] getTag() {
 			return this.tag;
+		}
+
+		void update(char[] tag, char[] input) {
+			validBit = true;
+			visited = 1;
+			timeStamp = System.currentTimeMillis();
+			for (int i=0; i<tag.length; i++) {
+				this.tag[i] = tag[i];
+			}
+			// input.length <= this.data.length
+			for (int i=0; i<input.length; i++) {
+				this.data[i] = input[i];
+			}
 		}
 
 	}

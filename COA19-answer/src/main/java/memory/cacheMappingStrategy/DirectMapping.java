@@ -9,14 +9,23 @@ import transformer.Transformer;
  */
 public class DirectMapping extends MappingStrategy{
 
+    static final int CACHE_LINE = Cache.CACHE_SIZE_B/Cache.LINE_SIZE_B; // 共1024个行
+
+    Transformer t = new Transformer();
+
     /**
      * @param blockNO 内存数据块的块号
      * @return cache数据块号 22-bits  [前12位有效]
      */
     @Override
     public char[] getTag(int blockNO) {
-        // TODO
-        return null;
+        int tag = blockNO / CACHE_LINE;
+        String tagStr = t.intToBinary( ""+tag ).substring( 20,32 );
+        int diff = 22-tagStr.length();
+        for(int i=0;i<diff;i++){
+            tagStr = tagStr+"0";
+        }
+        return tagStr.toCharArray();
     }
 
 
@@ -27,8 +36,12 @@ public class DirectMapping extends MappingStrategy{
      */
     @Override
     public int map(int blockNO) {
-        // TODO
-        return -1;
+        char[] tag = getTag( blockNO );
+        int row = blockNO % CACHE_LINE;
+        if( Cache.getCache().isMatch( row, tag ) ){  // 命中返回row
+            return row;
+        }
+        return -1;      // 未命中
     }
 
     /**
@@ -38,8 +51,10 @@ public class DirectMapping extends MappingStrategy{
      */
     @Override
     public int writeCache(int blockNO) {
-        // TODO
-        return -1;
+        char[] tag = getTag( blockNO );
+        int row = blockNO % CACHE_LINE;
+        Cache.getCache().update( row,tag, Memory.getMemory().read(t.intToBinary(String.valueOf(Cache.LINE_SIZE_B * blockNO)), Cache.LINE_SIZE_B));
+        return row;
     }
 
 

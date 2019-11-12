@@ -60,7 +60,7 @@ public class SetAssociativeMappingTest {
 
     @Test
     public void test2() {
-        String eip = "00000010101000000000010000000000";
+        String eip = "00000000001000000000010000000000";
         this.cache.setStrategy(new SetAssociativeMapping(), new LFUReplacement());
         char[] input = {0b00000000, 0b11010100, 0b01111110, 0b00000000, 0b00000000,
                 0b11010100, 0b10011010, 0b11010100, 0b01000110, 0b11110101,
@@ -71,20 +71,20 @@ public class SetAssociativeMappingTest {
         memory.write(eip, input.length, input);
         assertTrue(Arrays.equals(input, cache.read(eip, input.length)));
         assertTrue(Arrays.equals(input, memory.read(eip, input.length)));
-        assertTrue(cache.checkStatus(new int[]{4}, new boolean[]{true}, new char[][]{"0000001010100000000000".toCharArray()}));
+        assertTrue(cache.checkStatus(new int[]{4}, new boolean[]{true}, new char[][]{"0000000000100000000000".toCharArray()}));
         cache.clear();
     }
 
     @Test
     public void test3() {
-        String eip = "00000100010010101101100000000000";
+        String eip = "00000000010010101101100000000000";
         this.cache.setStrategy(new SetAssociativeMapping(), new LRUReplacement());
         char[] input = {0b11110111, 0b01111110, 0b10010110, 0b01111110, 0b00110101,
                 0b10010100, 0b11010111, 0b10011101, 0b01111100, 0b11000000};
         memory.write(eip, input.length, input);
         assertTrue(Arrays.equals(input, cache.read(eip, input.length)));
         assertTrue(Arrays.equals(input, memory.read(eip, input.length)));
-        assertTrue(cache.checkStatus(new int[]{Integer.parseInt(new Transformer().binaryToInt("0" + "10110110")) * 4}, new boolean[]{true}, new char[][]{"0000010001001000000000".toCharArray()}));
+        assertTrue(cache.checkStatus(new int[]{Integer.parseInt(new Transformer().binaryToInt("0" + "10110110")) * 4}, new boolean[]{true}, new char[][]{"0000000001001000000000".toCharArray()}));
         cache.clear();
     }
 

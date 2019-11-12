@@ -8,7 +8,7 @@ import transformer.Transformer;
  * TODO: 内存数据结构抽象
  */
 public class Memory {
-    private static int MEM_SIZE_B = 128 * 1024 * 1024;      // 128 MB
+    private static int MEM_SIZE_B = 32 * 1024 * 1024;      // 128 MB
 
     private static char[] memory = new char[MEM_SIZE_B];
 
