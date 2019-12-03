@@ -1,6 +1,8 @@
 package memory;
 
 import memory.cacheMappingStrategy.MappingStrategy;
+import memory.cacheMappingStrategy.SetAssociativeMapping;
+import memory.cacheReplacementStrategy.LRUReplacement;
 import memory.cacheReplacementStrategy.ReplacementStrategy;
 import transformer.Transformer;
 
@@ -22,7 +24,10 @@ public class Cache {	//
 
 	private static Cache cacheInstance = new Cache();
 
-	private Cache() {}
+	private Cache() {
+		this.mappingStrategy = new SetAssociativeMapping();
+		mappingStrategy.setReplacementStrategy(new LRUReplacement());
+	}
 
 	public static Cache getCache() {
 		return cacheInstance;
@@ -46,60 +51,6 @@ public class Cache {	//
 		}
 
 		return rowNO;
-	}
-
-	/**
-	 *
-	 * @param row 内存地址对应的cache行
-	 * @param tag 内存地址对应的tag
-	 * @return
-	 */
-	public boolean isMatch(int row, char[] tag){
-		if(this.cache.get( row ) == null){
-			return false;
-		}
-		if (!this.cache.get(row).validBit) {
-			return false;
-		}
-		if (!Arrays.equals(this.cache.get(row).tag, tag)) {
-			return false;
-		}
-		return true;
-	}
-
-	// 用于LRU算法，重置时间戳
-	public void setTimeStamp(int row){
-		CacheLine cacheLine = cache.get( row );
-		cacheLine.timeStamp = System.currentTimeMillis();
-	}
-
-	// 获取时间戳
-	public long getTimeStamp(int row){
-		CacheLine cacheLine = cache.get( row );
-		if (cacheLine.validBit) {
-			return cacheLine.timeStamp;
-		}
-		return -1;
-	}
-
-	// 未命中，更新cache
-	public void update(int row, char[] addrTag, char[] input) {
-		CacheLine cacheLine = cache.get( row );
-		cacheLine.update( addrTag, input );
-	}
-
-	// LFU算法增加访问次数
-	public void addVisited(int row){
-		CacheLine cacheLine = cache.get( row );
-		cacheLine.visited = cacheLine.visited+1;
-	}
-
-	public int getVisited(int row){
-		CacheLine cacheLine = cache.get( row );
-		if (cacheLine.validBit) {
-			return cacheLine.visited;
-		}
-		return -1;
 	}
 
 	/**
@@ -201,6 +152,61 @@ public class Cache {	//
 	}
 
 	/**
+	 *
+	 * @param row 内存地址对应的cache行
+	 * @param tag 内存地址对应的tag
+	 * @return
+	 */
+	public boolean isMatch(int row, char[] tag){
+		if(this.cache.get( row ) == null){
+			return false;
+		}
+		if (!this.cache.get(row).validBit) {
+			return false;
+		}
+		if (!Arrays.equals(this.cache.get(row).tag, tag)) {
+			return false;
+		}
+		return true;
+	}
+
+
+	// 用于LRU算法，重置时间戳
+	public void setTimeStamp(int row){
+		CacheLine cacheLine = cache.get( row );
+		cacheLine.timeStamp = System.currentTimeMillis();
+	}
+
+	// 获取时间戳
+	public long getTimeStamp(int row){
+		CacheLine cacheLine = cache.get( row );
+		if (cacheLine.validBit) {
+			return cacheLine.timeStamp;
+		}
+		return -1;
+	}
+
+	// 未命中，更新cache
+	public void update(int row, char[] addrTag, char[] input) {
+		CacheLine cacheLine = cache.get( row );
+		cacheLine.update( addrTag, input );
+	}
+
+	// LFU算法增加访问次数
+	public void addVisited(int row){
+		CacheLine cacheLine = cache.get( row );
+		cacheLine.visited = cacheLine.visited+1;
+	}
+
+	public int getVisited(int row){
+		CacheLine cacheLine = cache.get( row );
+		if (cacheLine.validBit) {
+			return cacheLine.visited;
+		}
+		return -1;
+	}
+
+	/**
 	 * 负责对CacheLine进行动态初始化
 	 */
 	private class CacheLinePool {
@@ -267,6 +273,5 @@ public class Cache {	//
 				this.data[i] = input[i];
 			}
 		}
-
 	}
 }

@@ -1,5 +1,7 @@
 package cpu.alu;
 
+import cpu.CPU_State;
+import cpu.registers.EFlag;
 import transformer.Transformer;
 import util.BinaryIntegers;
 import util.IEEE754Float;
@@ -13,11 +15,13 @@ import java.util.Arrays;
  */
 public class ALU {
 
-    // 模拟寄存器中的进位标志位
-    private String CF = "0";
+//    // 模拟寄存器中的进位标志位
+//    private String CF = "0";
+//
+//    // 模拟寄存器中的溢出标志位
+//    private String OF = "0";
 
-    // 模拟寄存器中的溢出标志位
-    private String OF = "0";
+    private EFlag eflag =  (EFlag) CPU_State.eflag;
 
     private Transformer transformer = new Transformer();
 
@@ -27,7 +31,7 @@ public class ALU {
 	 * @param dest 32-bits
 	 * @return 32-bits
 	 */
-	String mul (String src, String dest){
+	public String mul (String src, String dest){
         int length = 32;  // length为数据长度
         String X = impleDigits(src, length);
         dest = impleDigits(dest, length);
@@ -50,10 +54,10 @@ public class ALU {
         }
         String higher = product.substring(0, length);
         String lower = product.substring(length);  // 直接截断高32位，取低32位作为结果返回
-        OF = "0";
+        eflag.setOF(false);
         for(char c: higher.toCharArray()){
             if(c == '1'){
-                OF = "1";  // 如果高32位有1判定为溢出
+                eflag.setOF(true);  // 如果高32位有1判定为溢出
                 break;
             }
         }
@@ -66,7 +70,7 @@ public class ALU {
      * @param operand2 32-bits
      * @return 65-bits overflow + quotient + remainder
      */
-    String div(String operand1, String operand2) {
+    public String div(String operand1, String operand2) {
         int length = 64;
         String quotient = "";
         String remainder = "";
@@ -161,14 +165,16 @@ public class ALU {
     }
 
     //add two integer
-    String add(String src, String dest) {
+    public String add(String src, String dest) {
         // add two integer in 2's complement code
-        return adder(src, dest, '0', 32);  //注意有进位不等于溢出，溢出要另外判断。已经被封装在上一步
+        String result = adder(src, dest, '0', 32);  //注意有进位不等于溢出，溢出要另外判断。已经被封装在上一步
+
+        return result;
     }
 
     //sub two integer
     // dest - src
-    String sub(String src, String dest) {
+    public String sub(String src, String dest) {
         return adder(dest, negation(src), '1', 32);  //不能直接取反加一（有可能取反加一溢出），必须这一步改初始carry位‘0’为‘1’。这样写完全模拟ppt上面的做法，但是还是可能取反的时候就溢出，先加一反而不溢出，所以其实还是不完美。注意有进位不等于溢出，溢出要另外判断。
     }
 
@@ -203,7 +209,7 @@ public class ALU {
         return temp;
     }
 
-    String and(String src, String dest) {
+    public String and(String src, String dest) {
         char[] result = new char[32];
         for (int i = 0; i < src.length(); i++) {
             char srcItem = src.charAt(i);
@@ -218,7 +224,7 @@ public class ALU {
         return resultStr.toString();
     }
 
-    String or(String src, String dest) {
+    public String or(String src, String dest) {
         char[] result = new char[32];
         for (int i = 0; i < src.length(); i++) {
             char srcItem = src.charAt(i);
@@ -232,7 +238,7 @@ public class ALU {
         return resultStr.toString();
     }
 
-    String xor(String src, String dest) {
+    public String xor(String src, String dest) {
         char[] result = new char[32];
         for (int i = 0; i < src.length(); i++) {
             char srcItem = src.charAt(i);
@@ -297,7 +303,7 @@ public class ALU {
         operand1 = impleDigits(operand1, length);
         operand2 = impleDigits(operand2, length);
         String res = carry_adder(operand1, operand2, c, length);
-        OF = "" + addOverFlow(operand1, operand2, res);
+        eflag.setOF(addOverFlow(operand1, operand2, res).equals("1"));
         return res;  //注意有进位不等于溢出，溢出要另外判断
     }
 
@@ -311,8 +317,8 @@ public class ALU {
             result.append(output.charAt(1));
         }
         // 溢出、进位判断
-        CF=String.valueOf(output.charAt(1));
-        OF=String.valueOf((carry-'0')^(output.charAt(1)));//Cn和Cn-1取异或
+        eflag.setCF(output.charAt(1) == 1);
+        eflag.setOF(((carry-'0')^(output.charAt(1))) == 1);   //Cn和Cn-1取异或
 
         return result.reverse().toString();
     }
@@ -380,11 +386,11 @@ public class ALU {
         CLAresult=carryLookAheadAdder_8(adder1.substring(0,8),adder2.substring(0,8),CLAresult.charAt(8));
         result=CLAresult.substring(0,8)+result;
 
-        CF=String.valueOf(CLAresult.charAt(8));
+        eflag.setCF(CLAresult.charAt(8) == 1);
         int x=adder1.charAt(0)-'0';
         int y=adder2.charAt(0)-'0';
         int s=result.charAt(0)-'0';
-        OF=(String.valueOf((x&y&~s)|(~x&~y&s)));//不好找Cn-1，所以计算繁琐一点
+        eflag.setOF(((x&y&~s)|(~x&~y&s)) == 1); //不好找Cn-1，所以计算繁琐一点
         return result;
 
     }
@@ -441,7 +447,7 @@ public class ALU {
             carry = temp.charAt(0);
             res = temp.charAt(1) + res;
         }
-        CF = "" + carry;
+        eflag.setCF(carry == 1);
         return res;  //注意这个方法里面溢出即有进位
     }
 
