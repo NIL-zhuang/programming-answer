@@ -19,7 +19,7 @@ public class CPU {
         // 执行过的指令的总长度
         int totalLen = 0;
         while (number > 0) {
-            // TODO
+            // TODO 上次作业
             break;
         }
         return totalLen;
@@ -52,8 +52,12 @@ public class CPU {
      * @return
      */
     private int instrFetch(String eip, int length) {
-        // TODO
+        // TODO X   FINISHED √
         return -1;
+    }
+
+    public void execUntilHlt(){
+        // TODO ICC
     }
 
 }

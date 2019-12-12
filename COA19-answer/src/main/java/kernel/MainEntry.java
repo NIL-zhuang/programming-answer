@@ -26,6 +26,6 @@ public class MainEntry {
             e.printStackTrace();
         }
         //Set up eip value , which will be the first instruction
-        int ans = cpu.execInstr(1);
+        cpu.execUntilHlt();
     }
 }
