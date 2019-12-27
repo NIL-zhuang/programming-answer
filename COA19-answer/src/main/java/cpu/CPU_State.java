@@ -17,6 +17,5 @@ public class CPU_State {
     public static Register edx = new EDX();
     public static Register ebx = new EBX();
 
-    public static int ICC;  //control unit
 
 }

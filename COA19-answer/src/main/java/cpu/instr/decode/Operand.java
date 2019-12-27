@@ -1,11 +1,10 @@
 package cpu.instr.decode;
 
+import cpu.CPU_State;
 import cpu.MMU;
+import cpu.registers.Register;
+import memory.Memory;
 
-/**
- * 如果操作数是立即数，直接setVal
- * 如果操作数是地址，则先set到对应的addr，再使用operandRead初始化val
- */
 public class Operand {
     private OperandType type;
     private String addr;
@@ -55,7 +54,13 @@ public class Operand {
         // TODO: this.addr 读取数据
         switch (this.type) {
             case OPR_MEM:
+                //assert(opr->sreg == SREG_DS || opr->sreg == SREG_SS);
+                // opr->val = vaddr_read(opr->addr, opr->sreg, 4);
+                this.val = String.valueOf(mmu.read(this.addr, this.data_size));
+                break;
             case OPR_IMM:
+                this.val = String.valueOf(mmu.read(this.addr,4));
+                break;
             case OPR_REG:
             case OPR_CREG:
             case OPR_SREG:
@@ -66,6 +71,7 @@ public class Operand {
             case 8:
             case 16:
             case 32:
+                break;
             default:
                 System.out.printf("Error: Operand data size = %u\n", this.data_size);
                 break;
@@ -76,10 +82,22 @@ public class Operand {
     public void operandWrite() {
         switch(this.type) {
             case OPR_MEM:
+                //TODO: this.value 写入DS寄存器
+                CPU_State.ds.write(this.val);
+                break;
             case OPR_REG:
             case OPR_IMM:
+                System.out.println("Error: Cannot write to an immediate");
+                break;
             case OPR_CREG:
         }
+    }
+
+    public class memAddr {
+        int disp;  // hex
+        int base;  // register
+        int index; // register
+        int scale; // 1, 2, 4, 8
     }
 
 }

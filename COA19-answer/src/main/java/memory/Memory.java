@@ -235,7 +235,7 @@ public class Memory {
         // 通知Cache缓存失效
         // 本作业只要求读数据，不要求写数据，因此不存在程序修改数据导致Cache修改 -> Mem修改 -> Disk修改等一系列write back/write through操作，
         //     write方法只用于测试用例中的下层存储修改数据导致上层存储数据失效，Disk.write同理
-//        Cache.getCache().invalid(eip, len);
+        Cache.getCache().invalid(eip, len);
         // 更新数据
         int start = Integer.parseInt(new Transformer().binaryToInt(eip));
         for (int ptr=0; ptr<len; ptr++) {
@@ -259,6 +259,13 @@ public class Memory {
         sd.setLimit(t.intToBinary(String.valueOf(len)).substring(1, 32).toCharArray());
         sd.setValidBit(isValid);
         Memory.segTbl.add(segSelector, sd);
+    }
+
+    public void alloc_page_force(int vPageNO, String eip, int pageNO) {
+        pageTbl(vPageNO).setInMem(true);
+        pageTbl(vPageNO).setFrameAddr(eip.toCharArray());
+        reversedPageTbl(pageNO).isValid = true;
+        reversedPageTbl(pageNO).vPageNO = vPageNO;
     }
 
     public void clear() {
@@ -379,6 +386,7 @@ public class Memory {
 
         int current = 0;    // 当前地址前的空间是紧凑的
         int totalFree;   // 已经找到的空闲空间
+        System.out.println("Start Fit:" + occupiedSegs.size());
         for(AbstractMap.SimpleEntry<Integer,Integer> occupied: occupiedSegs){
             int base = occupied.getKey();
             totalFree = base-current;

@@ -27,6 +27,27 @@ public class Loader {
         return 0;
     }
 
+    public static int loadExec(String path, String prefix, String suffix) throws IOException {
+        String eip = "00000000000000000000000000000000";
+        Memory.PAGE = true;
+        Memory.SEGMENT = true;
+
+        readTarget(path);
+        if (prefix != null) {
+            bitContent = prefix + bitContent;
+        }
+        if (suffix != null) {
+            bitContent += suffix;
+        }
+        Disk.getDisk().write(eip,
+                bitContent.length(),
+                bitContent.toCharArray());
+        MainEntry.memory.alloc_seg_force(0, "00000000000000000000000000000000", 1024, false, "");
+        CPU_State.cs.write("0000000000000000");
+        CPU_State.eip.write(eip);
+        return 0;
+    }
+
     private static void readTarget(String path) throws IOException {
         StringBuilder sb = new StringBuilder();
         File filename = new File(path);

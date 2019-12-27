@@ -1,6 +1,8 @@
 package cpu.instr.all_instrs;
 
 public class Opcode {
+    //TODO: fill the opcode table according to i386 manual
+    public static final String[] opcodeEntryTest = {"Mov", "Or"};
     public static final String[] opcodeEntry = {
 /* 0x00 - 0x03*/    "add_r2rm_b", "add_r2rm_v", "add_rm2r_b", "add_rm2r_v",
 /* 0x04 - 0x07*/    "add_i2a_b", "add_i2a_v", "inv", "inv",

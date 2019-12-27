@@ -85,10 +85,11 @@ public class ICCTest {
     public void file_test7() {
         String[] args = {"test/icc_test_7.txt"};
         String zero = "00000000000000000000000000000000";
+        String res = "00000001100000101101001001010100";
         CPU_State.eax.write(zero);
         MainEntry.main(args);
         assertTrue(MainEntry.eflag.getZF());
-        assertEquals(zero, CPU_State.eax.read());
+        assertEquals(res, CPU_State.eax.read());
         MainEntry.memory.clear();
     }
 

@@ -428,14 +428,12 @@ public class ALU {
     }
 
     /**
-     * add two nums with the length of given length which could be divided by 4, and the result's first bit presents the overflow
-     * different from the {@code adder} method, the result's first bit presents whether it generates the carry
-     *
+     * add two nums with the length of given length
      * @param operand1 first
      * @param operand2 second
      * @param c        original carray
      * @param length   given length
-     * @return result, and the result's first bit presents the carry
+     * @return result
      */
     private String carry_adder(String operand1, String operand2, char c, int length) {
         operand1 = impleDigits(operand1, length);
