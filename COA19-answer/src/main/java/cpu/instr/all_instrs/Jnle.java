@@ -24,9 +24,12 @@ public class Jnle implements Instruction {
 
     @Override
     public int exec(int opcode) {
-        if(opcode == 0x7f){
-            if ( (!eflag.getZF()) && (eflag.getSF() == eflag.getOF()) ) {
+        if (opcode == 0x7f) {
+            // 7F Jump short if not less or equal (ZF=0 and SF=OF)
+            // 判断跳转
+            if ((!eflag.getZF()) && (eflag.getSF() == eflag.getOF())) {
                 Operand imm = new Operand();
+                // todo 这里是不是有问题
                 imm.setVal("000000000000000000000000" + instr.substring(8, 16));
                 imm.setType(OperandType.OPR_IMM);
                 CPU_State.eip.write(alu.add(CPU_State.eip.read(), imm.getVal()));
@@ -40,7 +43,7 @@ public class Jnle implements Instruction {
 
     @Override
     public String fetchInstr(String eip, int opcode) {
-        if(opcode == 0x7f){
+        if (opcode == 0x7f) {
             len = 8 + 8;
             this.eip = eip;
             instr = String.valueOf(mmu.read(cs.read() + CPU_State.eip.read(), len));

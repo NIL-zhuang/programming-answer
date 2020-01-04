@@ -39,14 +39,15 @@ public class ControlUnit {
                 //execute according to opcode
                 case 2:
                     len = ControlUnit.instruction.exec(currentOpcode);
-                    if(len == -1) {
+                    if (len == -1) {
                         ICC = 3;
                         break;
                     }
-                    ((EIP)CPU_State.eip).plus(len);
+                    ((EIP) CPU_State.eip).plus(len);
                     ICC = 0;
                     break;
-
+                default:
+                    break;
             }
         }
         return len;

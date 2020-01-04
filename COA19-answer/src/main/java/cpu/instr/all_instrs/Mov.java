@@ -33,36 +33,47 @@ public class Mov implements Instruction {
             imm.setType(OperandType.OPR_IMM);
             CPU_State.eax.write(imm.getVal());
         } else if (opcode == 0xc7) {
+            // 把立即数加载进内存
             String mod = instr.substring(8, 16);
-            if (mod.equals("10000011")) {
+            if ("10000011".equals(mod)) {
+                // move r/m32, imm32
                 String displacement = instr.substring(16, 16 + 32);
                 Operand imm = new Operand();
                 imm.setVal(instr.substring(16 + 32, 16 + 64));
                 imm.setType(OperandType.OPR_IMM);
 
                 String location = alu.add(displacement, CPU_State.ebx.read());
-
                 Memory.getMemory().write(location, 32, imm.getVal().toCharArray());
             }
-        } else if(opcode == 0x8b){
+        }
+
+        else if(opcode == 0x8b){
+            // move r/m dword to dword register
             String mod = instr.substring(8, 16);
-            if (mod.equals("10000011")) {
+            if ("10000011".equals(mod)) {
+                // eax
                 String displacement = instr.substring(16, 16 + 32);
                 String location = alu.add(displacement, CPU_State.ebx.read());
                 CPU_State.eax.write(String.valueOf(mmu.read(CPU_State.ds.read() + location, 32)));
-            } else if(mod.equals("10001011")){
+            } else if("10001011".equals(mod)){
+                // ecx
                 String displacement = instr.substring(16, 16 + 32);
                 String location = alu.add(displacement, CPU_State.ebx.read());
                 CPU_State.ecx.write(String.valueOf(mmu.read(CPU_State.ds.read() + location, 32)));
             }
-        } else if(opcode == 0x89){
+        }
+
+        else if(opcode == 0x89){
+            // move dword register to r/m dword
             String mod = instr.substring(8, 16);
             String displacement = "";
-            if (mod.equals("10000011")) {
+            if ("10000011".equals(mod)) {
+                // eax
                 displacement = instr.substring(16, 16 + 32);
                 String location = alu.add(displacement, CPU_State.ebx.read());
                 Memory.getMemory().write(location, 32 , CPU_State.eax.read().toCharArray());
-            } else if(mod.equals("10001011")){
+            } else if("10001011".equals(mod)){
+                // ecx
                 displacement = instr.substring(16, 16 + 32);
                 String location = alu.add(displacement, CPU_State.ebx.read());
                 Memory.getMemory().write(location, 32 , CPU_State.ecx.read().toCharArray());

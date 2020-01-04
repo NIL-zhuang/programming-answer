@@ -24,7 +24,8 @@ public class Jz implements Instruction {
     @Override
     public int exec(int opcode) {
         if (opcode == 0x74) {
-            if(eflag.getZF()) { // ZF = 1
+            if(eflag.getZF()) {
+                // ZF = 1
                 Operand imm = new Operand();
                 imm.setVal("000000000000000000000000" + instr.substring(8, 16));
                 imm.setType(OperandType.OPR_IMM);

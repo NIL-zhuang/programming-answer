@@ -13,11 +13,17 @@
 MMU（Memory Management Unit）为本次作业的数据访问接口，其数据流为：
 
 1. 测试用例调用MMU#read()方法使用逻辑地址访问数据
+
 2. MMU 根据 Memory 的管理策略将逻辑地址转换成 Memory 的物理地址
+
 3. MMU 调用 Memory#load() 确保待读数据一定在内存中
+	
 	3.1 数据未加载到 Memory，访问 Disk
+	
 	3.2 将 Disk 中的数据加载到 Memory
+
 4. MMU 调用 Memory#read()从内存读取数据
+
 5. 返回数据给测试用例
 
 

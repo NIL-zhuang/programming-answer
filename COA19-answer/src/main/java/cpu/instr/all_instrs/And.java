@@ -6,12 +6,11 @@ import cpu.alu.ALU;
 import cpu.instr.decode.Operand;
 import cpu.instr.decode.OperandType;
 import cpu.registers.CS;
+import cpu.registers.EFlag;
 
 public class And implements Instruction{
     private MMU mmu = MMU.getMMU();
     private CS cs = (CS) CPU_State.cs;
-    private static String src;
-    private static String dest;
     private int len;
     private String instr;
 
@@ -22,9 +21,8 @@ public class And implements Instruction{
             Operand imm = new Operand();
             imm.setVal(instr.substring(8, 40));
             imm.setType(OperandType.OPR_IMM);
-
-            dest = CPU_State.eax.read();
-            src = imm.getVal();
+            ((EFlag)CPU_State.eflag).setCF(false);
+            ((EFlag)CPU_State.eflag).setOF(false);
             CPU_State.eax.write(alu.and(imm.getVal(), CPU_State.eax.read()));
         }
         return len;

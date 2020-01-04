@@ -6,6 +6,7 @@ import cpu.instr.decode.Operand;
 import cpu.instr.decode.OperandType;
 import cpu.registers.CS;
 import memory.Memory;
+import util.BinaryIntegers;
 
 import static kernel.MainEntry.alu;
 import static kernel.MainEntry.eflag;
@@ -18,34 +19,34 @@ public class Cmp implements Instruction {
 
     @Override
     public int exec(int opcode) {
-		if (opcode == 0x3D) {
-			Operand imm = new Operand();
-			imm.setVal(instr.substring(8, 40));
-			imm.setType(OperandType.OPR_IMM);
+        if (opcode == 0x3D) {
+            Operand imm = new Operand();
+            imm.setVal(instr.substring(8, 40));
+            imm.setType(OperandType.OPR_IMM);
 
-			String result = alu.sub(CPU_State.eax.read(), imm.getVal());
-			if (result.equals("00000000000000000000000000000000")) {
-				eflag.setZF(true);
-			}
-		} else if(opcode == 0x39){
+            String result = alu.sub(CPU_State.eax.read(), imm.getVal());
+            if (result.equals(BinaryIntegers.ZERO)) {
+                eflag.setZF(true);
+            }
+        } else if (opcode == 0x39) {
             String mod = instr.substring(8, 16);
-            if (mod.equals("11001000")) {
-            	String result = alu.sub(CPU_State.ecx.read(), CPU_State.eax.read());
-            	eflag.setZF(!result.contains("1"));
-            	eflag.setSF(result.startsWith("1"));
+            if ("11001000".equals(mod)) {
+                String result = alu.sub(CPU_State.ecx.read(), CPU_State.eax.read());
+                eflag.setZF(!result.contains("1"));
+                eflag.setSF(result.startsWith("1"));
             }
         }
-		toBinaryStr(instr);
+        toBinaryStr(instr);
         return len;
     }
 
     @Override
     public String fetchInstr(String eip, int opcode) {
-    	if (opcode == 0x3D) {
-    		len = 8 + 32;
-		} else if (opcode == 0x39) {
-    		len = 8 + 8;
-		}
+        if (opcode == 0x3D) {
+            len = 8 + 32;
+        } else if (opcode == 0x39) {
+            len = 8 + 8;
+        }
         instr = String.valueOf(mmu.read(cs.read() + CPU_State.eip.read(),
                 len));
         return instr;

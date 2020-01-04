@@ -5,10 +5,10 @@ import cpu.alu.ALU;
 import cpu.registers.Register;
 import memory.Memory;
 
-/*
-只支持eax ecx ebx三个寄存器
-*/
-public class Pop implements Instruction{
+/**
+ * 只支持eax ecx ebx三个寄存器
+ */
+public class Pop implements Instruction {
     private Memory memory = Memory.getMemory();
 
     @Override
@@ -22,10 +22,14 @@ public class Pop implements Instruction{
             int reg = opcode & 0x7;
 
             Register register = CPU_State.eax;
-
-            if(reg == 0)  register = CPU_State.eax;
-            else if(reg == 1) register = CPU_State.ecx;
-            else if(reg == 2) register = CPU_State.edx;
+            if (reg == 0) {
+                // 1000
+                register = CPU_State.eax;
+            } else if (reg == 1) {
+                register = CPU_State.ecx;
+            } else if (reg == 2) {
+                register = CPU_State.edx;
+            }
 
             register.write(memory.topOfStack(CPU_State.esp.read()));
 

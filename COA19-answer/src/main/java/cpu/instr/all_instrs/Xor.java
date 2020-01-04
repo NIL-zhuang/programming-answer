@@ -5,6 +5,7 @@ import cpu.MMU;
 import cpu.instr.decode.Operand;
 import cpu.instr.decode.OperandType;
 import cpu.registers.CS;
+import cpu.registers.EFlag;
 
 import static kernel.MainEntry.alu;
 
@@ -22,6 +23,8 @@ public class Xor implements Instruction {
             imm.setVal(instr.substring(8, 40));
             imm.setType(OperandType.OPR_IMM);
 
+            ((EFlag)CPU_State.eflag).setCF(false);
+            ((EFlag)CPU_State.eflag).setOF(false);
             CPU_State.eax.write(alu.xor(imm.getVal(), CPU_State.eax.read()));
         }
         return len;
